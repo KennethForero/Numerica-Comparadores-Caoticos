@@ -16,7 +16,7 @@ MonoBehaviour:
   maxRetry: 10
   debugMode: 0
   preserveAcrossScenes: 1
-  useAnonymousConnection: 0
+  useAnonymousConnection: 1
   username: 
   oAuthToken: 
   port: 6667

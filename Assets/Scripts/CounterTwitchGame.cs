@@ -1,14 +1,33 @@
+using System.Security.Cryptography;
 using TMPro;
 using TwitchChat;
+using Unity.Mathematics;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Collections;
+using System.Drawing;
+using UnityEditor;
 
 public class CounterTwitchGame : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI usernameTMP;
     [SerializeField] private TextMeshProUGUI currentScoreTMP;
     [SerializeField] private TextMeshProUGUI maxScoreTMP;
+    [SerializeField] private TextMeshProUGUI ScoreStepsTMP;
 
     private int currentScore;
+    private int ScoreSteps;//
+    public string randomOperator;
+    private System.Random randomGenerator = new System.Random();
+    private System.Random random = new System.Random();
+    public TextMeshProUGUI operatorText;
+
+    [SerializeField] private string CorrectBackgroundColorHTML = "#24A110"; // Color verde predeterminado en formato HTML
+    [SerializeField] private string IncorrectBackgroundColorHTML = "#9F231C"; // Color rojo predeterminado en formato HTML
+    [SerializeField] private UnityEngine.Color BaseBackgroundColor; // Color rojo predeterminado en formato HTML
+    [SerializeField] private float timeToChangeColor=0.2f;
+
+
 
     private string lastUsername = string.Empty;
 
@@ -31,7 +50,7 @@ public class CounterTwitchGame : MonoBehaviour
 
         TwitchController.onTwitchMessageReceived += OnTwitchMessageReceived;
         TwitchController.onChannelJoined += OnChannelJoined;
-
+        
         currentMaxScore = PlayerPrefs.GetInt(maxScoreKey);
         currentMaxScoreUsername = PlayerPrefs.GetString(maxScoreUsernameKey, currentMaxScoreUsername);
         lastUserIdVIPGranted = PlayerPrefs.GetString(lastUserIdVIPGrantedKey, string.Empty);
@@ -46,6 +65,14 @@ public class CounterTwitchGame : MonoBehaviour
         TwitchController.onTwitchMessageReceived -= OnTwitchMessageReceived;
         TwitchController.onChannelJoined -= OnChannelJoined;
     }
+    public void GenerateRandomOperator()
+    {
+        string[] operators = new string[] { "=", "<", ">" };
+        int randomIndex = random.Next(operators.Length);
+        randomOperator = operators[randomIndex];
+
+        operatorText.text = randomOperator;
+    }
 
     private void OnTwitchMessageReceived(Chatter chatter)
     {
@@ -54,26 +81,103 @@ public class CounterTwitchGame : MonoBehaviour
         string displayName = chatter.IsDisplayNameFontSafe() ? chatter.tags.displayName : chatter.login;
 
         if (lastUsername.Equals(displayName)) return;
-
-        if (response == currentScore + 1) HandleCorrectResponse(displayName, chatter);
-        else HandleIncorrectResponse(displayName, chatter);
+        if (randomOperator == ">")
+        {
+            if (response == currentScore + 1)
+            {
+                HandleCorrectResponse(displayName, chatter);
+            }
+            else
+            {
+                HandleIncorrectResponse(displayName, chatter);
+            }
+        }
+        else if (randomOperator == "<")
+        {
+            if (response == currentScore - 1)
+            {
+                HandleCorrectResponse(displayName, chatter);
+            }
+            else
+            {
+                HandleIncorrectResponse(displayName, chatter);
+            }
+        }
+        else if (randomOperator == "=")
+        {
+            if (response == currentScore)
+            {
+                HandleCorrectResponse(displayName, chatter);
+            }
+            else
+            {
+                HandleIncorrectResponse(displayName, chatter);
+            }
+        }
+        else
+        {
+            HandleIncorrectResponse(displayName, chatter);
+        }
     }
 
     private void HandleCorrectResponse(string displayName, Chatter chatter)
     {
-        currentScore++;
+        Debug.Log("correcto");
+
+        currentScore = randomGenerator.Next(-100, 100);
+        GenerateRandomOperator();
+        ScoreSteps++;
+
+        // Convertir la cadena de color en formato HTML a un valor de Color
+        UnityEngine.Color parsedColor;
+        if (UnityEngine.ColorUtility.TryParseHtmlString(CorrectBackgroundColorHTML, out parsedColor))
+        {
+            Camera mainCamera = Camera.main; // Obtener la cámara principal
+            if (mainCamera != null)
+            {
+                mainCamera.backgroundColor = parsedColor; // Asignar el color convertido
+            }
+        }
+        else
+        {
+            Debug.LogError("Error al analizar el color HTML.");
+        }
+        
+        Invoke("ApplyRandomColorToBackground", timeToChangeColor);
+
         UpdateCurrentScoreUI(displayName, currentScore.ToString());
+        UpdateCurrentScorestepsUI(displayName, ScoreSteps.ToString());
 
         lastUsername = displayName;
-        if (currentScore > currentMaxScore)
+        if (ScoreSteps > currentMaxScore)
         {
-            SetMaxScore(displayName, currentScore);
+            SetMaxScore(displayName, ScoreSteps);
             HandleVIPStatusUpdate(chatter);
         }
     }
 
     private void HandleIncorrectResponse(string displayName, Chatter chatter)
     {
+        // Convertir la cadena de color en formato HTML a un valor de Color
+        UnityEngine.Color parsedColor;
+        if (UnityEngine.ColorUtility.TryParseHtmlString(IncorrectBackgroundColorHTML, out parsedColor))
+        {
+            Camera mainCamera = Camera.main; // Obtener la cámara principal
+            if (mainCamera != null)
+            {
+                mainCamera.backgroundColor = parsedColor; // Asignar el color convertido
+            }
+        }
+        else
+        {
+            Debug.LogError("Error al analizar el color HTML.");
+        }
+        Debug.Log("Incorrecto");
+
+        // Llamar al método para generar un color aleatorio para el fondo
+       
+        Invoke("ApplyRandomColorToBackground", timeToChangeColor);
+
         if (currentScore != 0)
         {
             DisplayShameMessage(displayName);
@@ -94,6 +198,32 @@ public class CounterTwitchGame : MonoBehaviour
         }
     }
 
+    private UnityEngine.Color GenerateRandomColor()
+    {
+        float r = UnityEngine.Random.value;
+        float g = UnityEngine.Random.value;
+        float b = UnityEngine.Random.value;
+        return new UnityEngine.Color(r, g, b);
+    }
+
+
+    private void ApplyRandomColorToBackground()
+    {
+        Camera mainCamera = Camera.main; // Obtener la cámara principal
+        if (mainCamera != null)
+        {
+            mainCamera.backgroundColor = BaseBackgroundColor; // Asignar el color proporcionado
+        }
+    }
+
+
+
+
+
+
+
+
+
     private void HandleNextPotentialVIP()
     {
         if (!string.IsNullOrEmpty(nextPotentialVIP))
@@ -108,10 +238,8 @@ public class CounterTwitchGame : MonoBehaviour
                 {
                     RemoveLastVIP();
                 }
-
                 GrantVIPToNextPotentialVIP();
             }
-
             nextPotentialVIP = string.Empty;
         }
     }
@@ -211,12 +339,27 @@ public class CounterTwitchGame : MonoBehaviour
     {
         usernameTMP.SetText(username);
         currentScoreTMP.SetText(score);
+       
+
     }
+    private void UpdateCurrentScorestepsUI(string username, string step)
+    {
+        usernameTMP.SetText(username);
+        ScoreStepsTMP.SetText(step);
+
+    }
+    
+
+
 
     private void ResetGame()
     {
+        Debug.Log("reinicia");
         lastUsername = "";
-        currentScore = 0;
+        currentScore = randomGenerator.Next(0, 11);
         currentScoreTMP.SetText(currentScore.ToString());
+        ScoreSteps = 0;
+        ScoreStepsTMP.SetText(ScoreSteps.ToString());
+        GenerateRandomOperator();
     }
 }

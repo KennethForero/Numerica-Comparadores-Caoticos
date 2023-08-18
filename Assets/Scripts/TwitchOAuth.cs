@@ -19,11 +19,11 @@ public class TwitchOAuth : MonoBehaviour
     private readonly string twitchVipUrl = "https://api.twitch.tv/helix/channels/vips";
     private readonly string twitchSettingsUrl = "https://api.twitch.tv/helix/chat/settings";
 
-    private readonly string twitchRedirectHost = "http://localhost:";
-    private int twitchFreePort;
+    private readonly string twitchRedirectHost = "http://localhost:8080/";
+  //  private int twitchFreePort;
 
-    private readonly string uselessUUID =
-        "/53125396-3e32-4fad-8f7e-36475724168b-a8fe83ab-3373-4a6a-8967-2532eafe407f-41483db3-f011-4a23-80da-9a340672692a-e755c6d4-c546-43ce-b722-b5a799561b4e-5ba1697d-79b2-4d5d-96c3-f0d91f13f583-f08f18f9-bd56-4a0f-a597-96f90108cd85-14449d50-6cc9-450f-8119-ff4c525e31db-e41a6912-92a0-48b6-b6d3-845c21bea7eb-7dfd7948-2976-42cf-9cca-b23ae5854813-107224eb-81ea-46dd-9bf5-9ebbfcfc45dc/";
+  //  private readonly string uselessUUID =
+  //     "/53125396-3e32-4fad-8f7e-36475724168b-a8fe83ab-3373-4a6a-8967-2532eafe407f-41483db3-f011-4a23-80da-9a340672692a-e755c6d4-c546-43ce-b722-b5a799561b4e-5ba1697d-79b2-4d5d-96c3-f0d91f13f583-f08f18f9-bd56-4a0f-a597-96f90108cd85-14449d50-6cc9-450f-8119-ff4c525e31db-e41a6912-92a0-48b6-b6d3-845c21bea7eb-7dfd7948-2976-42cf-9cca-b23ae5854813-107224eb-81ea-46dd-9bf5-9ebbfcfc45dc/";
 
     private readonly string loginSuccessUrl = "https://rociotome.com/success-numerica-login";
     private readonly string loginFailUrl = "https://rociotome.com/fail-numerica-login";
@@ -50,7 +50,10 @@ public class TwitchOAuth : MonoBehaviour
     {
         12345,
         1234,
-        12346
+        12346,
+        8080,
+
+
     };
 
     #region Singleton
@@ -153,7 +156,7 @@ public class TwitchOAuth : MonoBehaviour
         twitchAuthStateVerify = ((Int64)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds).ToString();
 
         var s = "client_id=" + Secrets.CLIENT_ID + "&" +
-                "redirect_uri=" + UnityWebRequest.EscapeURL(twitchRedirectHost+freePort+uselessUUID) + "&" +
+                "redirect_uri=" + UnityWebRequest.EscapeURL(twitchRedirectHost) + "&" + //+freePort+uselessUUID
                 "state=" + twitchAuthStateVerify + "&" +
                 "response_type=token" + "&" +
                 "scope=" + String.Join("+", scopes);
@@ -173,7 +176,7 @@ public class TwitchOAuth : MonoBehaviour
     {
         httpListener = new HttpListener();
 
-        httpListener.Prefixes.Add(twitchRedirectHost+freePort+uselessUUID);
+        httpListener.Prefixes.Add(twitchRedirectHost);  //+freePort+uselessUUID
         httpListener.Start();
         httpListener.BeginGetContext(IncomingHttpRequest, httpListener);
     }
